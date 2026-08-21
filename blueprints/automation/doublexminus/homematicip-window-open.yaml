@@ -60,7 +60,7 @@ action:
           # Wartet die konfigurierte Zeit ab (z. B. beim Stoßlüften)
           - delay:
               seconds: !input open_delay
-          # Übergibt den Status "offen" (true) an alle ausgewählten Thermostate
+          # Übergibt den Status "offen" (true) als echten Boolean an alle ausgewählten Thermostate
           - repeat:
               for_each: !input thermostats
               sequence:
@@ -69,13 +69,14 @@ action:
                     device_id: "{{ device_id(repeat.item) }}"
                     channel: 1
                     parameter: WINDOW_STATE
-                    value: "true"
+                    value: true
+                    value_type: boolean
 
       - conditions:
           - condition: trigger
             id: fenster_zu
         sequence:
-          # Übergibt den Status "geschlossen" (false) an alle ausgewählten Thermostate
+          # Übergibt den Status "geschlossen" (false) als echten Boolean an alle ausgewählten Thermostate
           - repeat:
               for_each: !input thermostats
               sequence:
@@ -84,4 +85,5 @@ action:
                     device_id: "{{ device_id(repeat.item) }}"
                     channel: 1
                     parameter: WINDOW_STATE
-                    value: "false"
+                    value: false
+                    value_type: boolean
