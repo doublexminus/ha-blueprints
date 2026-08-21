@@ -1,6 +1,6 @@
 blueprint:
-  name: "CCU3 Fenster-Modus für HmIP-eTRV-B (Address-Fix)"
-  description: "Aktiviert/deaktiviert den internen WINDOW_STATE von mehreren HmIP-eTRV-B Thermostaten über die CCU3, indem das Suffix (:1) aus der Adresse gefiltert wird."
+  name: "CCU3 Fenster-Modus für HmIP-eTRV-B (Single Thermostat)"
+  description: "Aktiviert/deaktiviert den internen WINDOW_STATE von genau einem HmIP-eTRV-B Thermostat über die CCU3. Schneidet das Suffix (:1) automatisch ab."
   source_url: https://githubusercontent.com
   domain: automation
   input:
@@ -14,14 +14,14 @@ blueprint:
               device_class: window
             - domain: binary_sensor
               device_class: door
-    thermostats:
-      name: "Thermostate"
-      description: "Wählen Sie ein oder mehrere HmIP-eTRV-B Heizkörperthermostate aus."
+    thermostat:
+      name: "Thermostat"
+      description: "Wählen Sie das einzelne HmIP-eTRV-B Heizkörperthermostat aus."
       selector:
         entity:
           filter:
             - domain: climate
-          multiple: true
+          multiple: false
     open_delay:
       name: "Verzögerung beim Öffnen (Wartezeit)"
       description: "Das Fenster muss mindestens so viele Sekunden offen sein, bevor die CCU3 benachrichtigt wird."
@@ -61,28 +61,22 @@ action:
           # Wartet die konfigurierte Zeit ab (z. B. beim Stoßlüften)
           - delay:
               seconds: !input open_delay
-          # Schleife schneidet das ':1' Suffix ab und sendet '1' an die CCU3
-          - repeat:
-              for_each: !input thermostats
-              sequence:
-                - service: homematicip_local.set_device_value
-                  data:
-                    device_address: "{{ state_attr(repeat.item, 'address').split(':')[0] }}"
-                    channel: 1
-                    parameter: WINDOW_STATE
-                    value: 1
+          # Sendet direkt an das ausgewählte Thermostat (ohne Schleife)
+          - service: homematicip_local.set_device_value
+            data:
+              device_address: "{{ state_attr(thermostat, 'address').split(':') }}"
+              channel: 1
+              parameter: WINDOW_STATE
+              value: 1
 
       - conditions:
           - condition: trigger
             id: fenster_zu
         sequence:
-          # Schleife schneidet das ':1' Suffix ab und sendet '0' an die CCU3
-          - repeat:
-              for_each: !input thermostats
-              sequence:
-                - service: homematicip_local.set_device_value
-                  data:
-                    device_address: "{{ state_attr(repeat.item, 'address').split(':')[0] }}"
-                    channel: 1
-                    parameter: WINDOW_STATE
-                    value: 0
+          # Schließt das Fenster auf der CCU3 wieder
+          - service: homematicip_local.set_device_value
+            data:
+              device_address: "{{ state_attr(thermostat, 'address').split(':') }}"
+              channel: 1
+              parameter: WINDOW_STATE
+              value: 0
