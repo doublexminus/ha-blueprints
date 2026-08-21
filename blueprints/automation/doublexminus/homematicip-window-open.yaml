@@ -1,12 +1,12 @@
 blueprint:
-  name: "HmIP Fenster-Erkennung"
-  description: "Setzt den WINDOW_STATE am HmIP-eTRV-B über die CCU3 auf 1 (offen) bzw. 0 (geschlossen), sobald der zugeordnete Kontaktsensor seinen Zustand ändert. Verhindert unnötiges Heizen bei geöffnetem Fenster."
-  source_url: https://raw.githubusercontent.com/doublexminus/ha-blueprints/refs/heads/main/blueprints/automation/doublexminus/homematicip-window-open.yaml
+  name: "HmIP Fenster-Erkennung (Mehrere Fenster)"
+  description: "Setzt den WINDOW_STATE am HmIP-eTRV-B über die CCU3 auf 1 (offen) bzw. 0 (geschlossen), sobald einer oder mehrere der zugeordneten Kontaktsensoren geöffnet werden. Die Heizung schaltet erst wieder ein, wenn alle Fenster geschlossen sind."
+  source_url: https://githubusercontent.com
   domain: automation
   input:
-    window_sensor:
-      name: "Fenster- oder Türsensor"
-      description: "Wählen Sie den Aqara Zigbee Kontaktsensor aus."
+    window_sensors:
+      name: "Fenster- oder Türkontakte"
+      description: "Wählen Sie einen oder mehrere Aqara Zigbee Kontaktsensoren aus."
       selector:
         entity:
           filter:
@@ -14,6 +14,7 @@ blueprint:
               device_class: window
             - domain: binary_sensor
               device_class: door
+          multiple: true
     thermostat:
       name: "Thermostat"
       description: "Wählen Sie das einzelne HmIP-eTRV-B Heizkörperthermostat aus."
@@ -34,25 +35,28 @@ blueprint:
           unit_of_measurement: "Sekunden"
           mode: slider
 
-# WICHTIG: Hier wird das !input in eine nutzbare Jinja-Variable übersetzt
+# Hier werden die Inputs wieder in nutzbare Jinja-Variablen übersetzt
 variables:
-  target_thermostat: !input thermostat 
+  target_thermostat: !input thermostat
+  sensors: !input window_sensors
 
 mode: restart
 
 trigger:
+  # Trigger feuert, wenn irgendein Sensor in der Liste geöffnet wird
   - platform: state
-    entity_id: !input window_sensor
+    entity_id: !input window_sensors
     from: "off"
     to: "on"
     id: fenster_offen
+  # Trigger feuert, wenn irgendein Sensor in der Liste geschlossen wird
   - platform: state
-    entity_id: !input window_sensor
+    entity_id: !input window_sensors
     from: "on"
     to: "off"
     id: fenster_zu
     for:
-      seconds: 5     
+      seconds: 5
 
 condition: []
 
@@ -65,7 +69,7 @@ action:
           # Wartet die konfigurierte Zeit ab (z. B. beim Stoßlüften)
           - delay:
               seconds: !input open_delay
-          # Sendet direkt an das ausgewählte Thermostat (ohne Schleife)
+          # Sendet direkt an das ausgewählte Thermostat
           - service: homematicip_local.set_device_value
             data:
               device_address: "{{ (state_attr(target_thermostat, 'address') or '').split(':')[0] }}"
@@ -76,8 +80,11 @@ action:
       - conditions:
           - condition: trigger
             id: fenster_zu
+          # WICHTIG: Nur fortfahren, wenn KEIN Fenster aus der Liste mehr offen ('on') ist
+          - condition: template
+            value_template: "{{ expand(sensors) | selectattr('state', 'eq', 'on') | list | count == 0 }}"
         sequence:
-          # Schließt das Fenster auf der CCU3 wieder
+          # Schließt das Fenster auf der CCU3 erst wieder, wenn alle Kontakte zu sind
           - service: homematicip_local.set_device_value
             data:
               device_address: "{{ (state_attr(target_thermostat, 'address') or '').split(':')[0] }}"
