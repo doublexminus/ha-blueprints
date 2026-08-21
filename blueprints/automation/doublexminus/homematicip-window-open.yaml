@@ -5,12 +5,15 @@ blueprint:
   domain: automation
   input:
     window_sensor:
-      name: "Fenstersensor"
-      description: "Wählen Sie den Aqara Zigbee Fenstersensor (binary_sensor) aus."
+      name: "Fenster- oder Türsensor"
+      description: "Wählen Sie den Aqara Zigbee Kontaktsensor aus."
       selector:
         entity:
           filter:
             - domain: binary_sensor
+              device_class: window
+            - domain: binary_sensor
+              device_class: door
     thermostats:
       name: "Thermostate"
       description: "Wählen Sie ein oder mehrere HmIP-eTRV-B Heizkörperthermostate aus."
