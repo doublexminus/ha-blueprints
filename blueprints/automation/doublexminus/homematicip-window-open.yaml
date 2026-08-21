@@ -1,7 +1,8 @@
 blueprint:
   name: "HmIP Fenster-Erkennung (Mehrere Fenster)"
   description: "Setzt den WINDOW_STATE am HmIP-eTRV-B über die CCU3 auf 1 (offen) bzw. 0 (geschlossen), sobald einer oder mehrere der zugeordneten Kontaktsensoren geöffnet werden. Die Heizung schaltet erst wieder ein, wenn alle Fenster geschlossen sind."
-  source_url: https://raw.githubusercontent.com/doublexminus/ha-blueprints/refs/heads/main/blueprints/automation/doublexminus/homematicip-window-open.yaml  domain: automation
+  source_url: https://raw.githubusercontent.com/doublexminus/ha-blueprints/refs/heads/main/blueprints/automation/doublexminus/homematicip-window-open.yaml
+  domain: automation
   input:
     window_sensors:
       name: "Fenster- oder Türkontakte"
