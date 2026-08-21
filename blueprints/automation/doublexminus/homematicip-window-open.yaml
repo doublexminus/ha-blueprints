@@ -1,7 +1,7 @@
 blueprint:
-  name: "CCU3 Fenster-Modus für HmIP-eTRV-B (Mehrere Thermostate)"
-  description: "Aktiviert/deaktiviert den internen WINDOW_STATE von HmIP-eTRV-B Thermostaten über die CCU3, wenn ein Aqara-Sensor schaltet. Die Absenktemperatur wird in der CCU3 definiert."
-  source_url: https://raw.githubusercontent.com/doublexminus/ha-blueprints/refs/heads/main/blueprints/automation/doublexminus/homematicip-window-open.yaml
+  name: "CCU3 Fenster-Modus für HmIP-eTRV-B (Address-Fix)"
+  description: "Aktiviert/deaktiviert den internen WINDOW_STATE von mehreren HmIP-eTRV-B Thermostaten über die CCU3, indem das Suffix (:1) aus der Adresse gefiltert wird."
+  source_url: https://githubusercontent.com
   domain: automation
   input:
     window_sensor:
@@ -19,7 +19,8 @@ blueprint:
       description: "Wählen Sie ein oder mehrere HmIP-eTRV-B Heizkörperthermostate aus."
       selector:
         entity:
-          domain: climate
+          filter:
+            - domain: climate
           multiple: true
     open_delay:
       name: "Verzögerung beim Öffnen (Wartezeit)"
@@ -60,30 +61,28 @@ action:
           # Wartet die konfigurierte Zeit ab (z. B. beim Stoßlüften)
           - delay:
               seconds: !input open_delay
-          # Übergibt den Status "offen" (true) als echten Boolean an alle ausgewählten Thermostate
+          # Schleife schneidet das ':1' Suffix ab und sendet '1' an die CCU3
           - repeat:
               for_each: !input thermostats
               sequence:
                 - service: homematicip_local.set_device_value
                   data:
-                    device_id: "{{ device_id(repeat.item) }}"
+                    device_address: "{{ state_attr(repeat.item, 'address').split(':')[0] }}"
                     channel: 1
                     parameter: WINDOW_STATE
-                    value: true
-                    value_type: boolean
+                    value: 1
 
       - conditions:
           - condition: trigger
             id: fenster_zu
         sequence:
-          # Übergibt den Status "geschlossen" (false) als echten Boolean an alle ausgewählten Thermostate
+          # Schleife schneidet das ':1' Suffix ab und sendet '0' an die CCU3
           - repeat:
               for_each: !input thermostats
               sequence:
                 - service: homematicip_local.set_device_value
                   data:
-                    device_id: "{{ device_id(repeat.item) }}"
+                    device_address: "{{ state_attr(repeat.item, 'address').split(':')[0] }}"
                     channel: 1
                     parameter: WINDOW_STATE
-                    value: false
-                    value_type: boolean
+                    value: 0
