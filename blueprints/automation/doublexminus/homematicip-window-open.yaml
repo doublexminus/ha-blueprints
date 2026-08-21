@@ -1,6 +1,6 @@
 blueprint:
-  name: "CCU3 Fenster-Modus für HmIP-eTRV-B (Single Thermostat)"
-  description: "Aktiviert/deaktiviert den internen WINDOW_STATE von genau einem HmIP-eTRV-B Thermostat über die CCU3. Schneidet das Suffix (:1) automatisch ab."
+  name: "HmIP Fenster-Erkennung"
+  description: "Setzt den WINDOW_STATE am HmIP-eTRV-B über die CCU3 auf 1 (offen) bzw. 0 (geschlossen), sobald der zugeordnete Kontaktsensor seinen Zustand ändert. Verhindert unnötiges Heizen bei geöffnetem Fenster."
   source_url: https://raw.githubusercontent.com/doublexminus/ha-blueprints/refs/heads/main/blueprints/automation/doublexminus/homematicip-window-open.yaml
   domain: automation
   input:
