@@ -50,6 +50,10 @@ trigger:
     for:
       seconds: 5
 
+# WICHTIG: Hier wird das !input in eine nutzbare Jinja-Variable übersetzt
+variables:
+  target_thermostat: !input thermostat      
+
 condition: []
 
 action:
@@ -64,7 +68,7 @@ action:
           # Sendet direkt an das ausgewählte Thermostat (ohne Schleife)
           - service: homematicip_local.set_device_value
             data:
-              device_address: "{{ state_attr(thermostat, 'address').split(':') }}"
+              device_address: "{{ state_attr(target_thermostat, 'address').split(':') }}"
               channel: 1
               parameter: WINDOW_STATE
               value: 1
@@ -76,7 +80,7 @@ action:
           # Schließt das Fenster auf der CCU3 wieder
           - service: homematicip_local.set_device_value
             data:
-              device_address: "{{ state_attr(thermostat, 'address').split(':') }}"
+              device_address: "{{ state_attr(target_thermostat, 'address').split(':') }}"
               channel: 1
               parameter: WINDOW_STATE
               value: 0
