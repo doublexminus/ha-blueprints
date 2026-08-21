@@ -1,0 +1,84 @@
+blueprint:
+  name: "CCU3 Fenster-Modus für HmIP-eTRV-B (Mehrere Thermostate)"
+  description: "Aktiviert/deaktiviert den internen WINDOW_STATE von HmIP-eTRV-B Thermostaten über die CCU3, wenn ein Aqara-Sensor schaltet. Die Absenktemperatur wird in der CCU3 definiert."
+  source_url: https://github.com/doublexminus/ha-blueprints/blueprints/automation/doublexminus/homematicip-window-open.yaml
+  domain: automation
+  input:
+    window_sensor:
+      name: "Fenstersensor"
+      description: "Der Aqara Zigbee Fenstersensor (binary_sensor)."
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: opening
+    thermostats:
+      name: "Thermostate"
+      description: "Wählen Sie ein oder mehrere HmIP-eTRV-B Heizkörperthermostate aus."
+      selector:
+        entity:
+          domain: climate
+          multiple: true
+    open_delay:
+      name: "Verzögerung beim Öffnen (Wartezeit)"
+      description: "Das Fenster muss mindestens so viele Sekunden offen sein, bevor die CCU3 benachrichtigt wird."
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 60
+          step: 1
+          unit_of_measurement: "Sekunden"
+          mode: slider
+
+mode: restart
+
+trigger:
+  - platform: state
+    entity_id: !input window_sensor
+    from: "off"
+    to: "on"
+    id: fenster_offen
+  - platform: state
+    entity_id: !input window_sensor
+    from: "on"
+    to: "off"
+    id: fenster_zu
+    for:
+      seconds: 5
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: fenster_offen
+        sequence:
+          # Wartet die konfigurierte Zeit ab (z. B. beim Stoßlüften)
+          - delay:
+              seconds: !input open_delay
+          # Übergibt den Status "offen" (true) an alle ausgewählten Thermostate
+          - repeat:
+              for_each: !input thermostats
+              sequence:
+                - service: homematicip_local.set_device_value
+                  data:
+                    device_id: "{{ device_id(repeat.item) }}"
+                    channel: 1
+                    parameter: WINDOW_STATE
+                    value: "true"
+
+      - conditions:
+          - condition: trigger
+            id: fenster_zu
+        sequence:
+          # Übergibt den Status "geschlossen" (false) an alle ausgewählten Thermostate
+          - repeat:
+              for_each: !input thermostats
+              sequence:
+                - service: homematicip_local.set_device_value
+                  data:
+                    device_id: "{{ device_id(repeat.item) }}"
+                    channel: 1
+                    parameter: WINDOW_STATE
+                    value: "false"
